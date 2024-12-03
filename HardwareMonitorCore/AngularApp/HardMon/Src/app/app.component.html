@@ -1,0 +1,78 @@
+<table width="800px" height="480px">
+    <tr>
+        <td span="2" width="33%" class="tdGauge">
+            <div class="gaugeDIV" #cpuGauge echarts [options]="cpuGaugeOption" (chartInit)="onCPUGaugeInit($event)"></div>
+        </td>
+        <td width="33%" class="tdGauge">
+            <div class="gaugeDIV" #gpuGauge echarts [options]="gpuGaugeOption" (chartInit)="onGPUGaugeInit($event)"></div>
+        </td>
+        <td rowspan="4">
+            <div #diskTreeChart echarts [options]="diskBarOption" class="treeGDIV" (chartInit)="onDiskTreeInit($event)"></div>
+        </td>
+    </tr>
+    <tr class="noPad">
+        <td>
+            <table width="100%" class="noPad">
+                <tr class="valRow">
+                    <td class="leftAlign">
+                        {{cpuPower}}<span class="unit">W</span>
+                    </td>
+                    <td class="rightAlign">
+                        {{cpuTemp}}<span class="unit">°C</span>
+                    </td>
+                </tr>
+            </table>
+        </td>
+        <td>
+            <table width="100%">
+                <tr class="valRow">
+                    <td class="rightAlign">
+                        {{gpuTemp}}<span class="unit">°C</span>
+                    </td>
+                    <td class="rightAlign">
+                        {{gpuHotTemp}}<span class="unit">°C</span>
+                    </td>
+                </tr>
+            </table>
+        </td>
+        <td></td>
+    </tr>
+    <tr class="valRow">
+        <td>
+            mem: &emsp;{{systemMemUsed}}<span class="unit">G</span>
+        </td>
+        <td class="rightAlign">
+            {{gpuMemory}}<span class="unit">G</span>
+        </td>
+        <td></td>
+    </tr>
+    <tr>
+        <td rowspan="2">
+            <div #cpuLineChart echarts [options]="cpuLineOption" class="lineGDIV" (chartInit)="onCPUChartInit($event)"></div>
+        </td>
+        <td class="valRow rightAlign">
+            {{gpuFanRPM}}<span class="unit">RPM</span>
+        </td>
+        <td>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <table width="100%" class="noPad">
+                <tr class="valRow">
+                    <td width="5%">U:</td>
+                    <td width="40%" class="leftAlign">{{mbUp}}<span class="unit">Mb</span></td>
+                </tr>
+            </table>
+        </td>
+        <td>
+            <table width="100%" class="noPad">
+                <tr class="valRow">
+                    <td width="5%">D:</td>
+                    <td width="40%" class="leftAlign">{{mbDown}}<span class="unit">Mb</span></td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
+

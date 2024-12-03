@@ -1,0 +1,40 @@
+/* You can add global styles to this file, and also import other style files */
+.valRow {
+    font-size: 36pt;
+}
+    .valRow td {
+        font-size: 36pt;
+        text-align: right;
+    }
+
+body {
+    background-color: black;
+    color: white;
+    font-family: 'Segoe UI';
+    margin: 0;
+}
+
+.tdGauge {
+}
+
+.gaugeDIV {
+    height: 180px;
+}
+.lineGDIV {
+    height: 136px;
+}
+.leftAlign {
+    text-align: left;
+}
+.rightAlign {
+    text-align: right;
+}
+.noPad td {
+    padding: 0;
+}
+.unit {
+    color: grey;
+}
+.treeGDIV {
+    height: 360px;
+}

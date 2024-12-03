@@ -1,0 +1,6 @@
+@HardwareMonitorCore_HostAddress = http://localhost:5048
+
+GET {{HardwareMonitorCore_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
