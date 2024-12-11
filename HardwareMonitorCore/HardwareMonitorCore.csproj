@@ -26,6 +26,16 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Remove="OpenHardware\WinRing0.sys" />
+    <None Remove="OpenHardware\WinRing0x64.sys" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="OpenHardware\WinRing0.sys" />
+    <EmbeddedResource Include="OpenHardware\WinRing0x64.sys" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Include="AngularApp\HardMon\tsconfig.json" />
     <None Include="appsettings.Development.json" />
   </ItemGroup>

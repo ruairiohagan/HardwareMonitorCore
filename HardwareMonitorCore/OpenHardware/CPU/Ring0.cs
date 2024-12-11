@@ -25,8 +25,8 @@ using System.Text;
 namespace OpenHardwareMonitor.Hardware {
   internal static class Ring0 {
 
-        private static KernelDriver driver;
-        private static string fileName;
+    private static KernelDriver driver;
+    private static string fileName;
     private static Mutex? isaBusMutex;
     private static Mutex? pciBusMutex;
     private static readonly StringBuilder report = new StringBuilder();
@@ -85,54 +85,65 @@ namespace OpenHardwareMonitor.Hardware {
             return null;
         }
 
-    private static bool ExtractDriver(string fileName) {
-      string resourceName = "HardwareMonitor.OpenHardware." +
-        (OperatingSystem.Is64BitOperatingSystem ? "WinRing0x64.sys" : 
-        "WinRing0.sys");
+        private static bool ExtractDriver(string fileName)
+        {
+            string resourceName = "HardwareMonitorCore.OpenHardware." +
+              (OperatingSystem.Is64BitOperatingSystem ? "WinRing0x64.sys" :
+              "WinRing0.sys");
 
-      string[] names = GetAssembly().GetManifestResourceNames();
+            string[] names = GetAssembly().GetManifestResourceNames();
             byte[] buffer = null;
-            for (int i = 0; i < names.Length; i++) {
-        if (names[i].Replace('\\', '.') == resourceName) {
-          using (Stream stream = GetAssembly().
-            GetManifestResourceStream(names[i])) 
-          {
+            for (int i = 0; i < names.Length; i++)
+            {
+                if (names[i].Replace('\\', '.') == resourceName)
+                {
+                    using (Stream stream = GetAssembly().
+                      GetManifestResourceStream(names[i]))
+                    {
                         buffer = new byte[stream.Length];
                         stream.Read(buffer, 0, buffer.Length);
-          }
-        }
-      }
+                    }
+                }
+            }
 
-      if (buffer == null)
-        return false;
+            if (buffer == null)
+                return false;
 
-      try {
-        using (FileStream target = new FileStream(fileName, FileMode.Create)) {
-          target.Write(buffer, 0, buffer.Length);
-          target.Flush();
-        }
-      } catch (IOException) { 
-        // for example there is not enough space on the disk
-        return false; 
-      }
+            try
+            {
+                using (FileStream target = new FileStream(fileName, FileMode.Create))
+                {
+                    target.Write(buffer, 0, buffer.Length);
+                    target.Flush();
+                }
+            }
+            catch (IOException)
+            {
+                // for example there is not enough space on the disk
+                return false;
+            }
 
-      // make sure the file is actually writen to the file system
-      for (int i = 0; i < 20; i++) {
-        try {
-          if (File.Exists(fileName) &&
-            new FileInfo(fileName).Length == buffer.Length) 
-          {
-            return true;
-          }
-          Thread.Sleep(100);
-        } catch (IOException) {
-          Thread.Sleep(10);
+            // make sure the file is actually writen to the file system
+            for (int i = 0; i < 20; i++)
+            {
+                try
+                {
+                    if (File.Exists(fileName) &&
+                      new FileInfo(fileName).Length == buffer.Length)
+                    {
+                        return true;
+                    }
+                    Thread.Sleep(100);
+                }
+                catch (IOException)
+                {
+                    Thread.Sleep(10);
+                }
+            }
+
+            // file still has not the right size, something is wrong
+            return false;
         }
-      }
-      
-      // file still has not the right size, something is wrong
-      return false;
-    }
 
     public static void Open() {
       // no implementation for unix systems
