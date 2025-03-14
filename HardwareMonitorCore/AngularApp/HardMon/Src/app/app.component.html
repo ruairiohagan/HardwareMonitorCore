@@ -7,6 +7,13 @@
             <div class="gaugeDIV" #gpuGauge echarts [options]="gpuGaugeOption" (chartInit)="onGPUGaugeInit($event)"></div>
         </td>
         <td rowspan="4">
+            <table width="100%" class="noPad">
+                <tr class="valRow">
+                    <td class="rightAlign">
+                        {{fps}}<span class="unit"> FPS</span>
+                    </td>
+                </tr>
+            </table>
             <div #diskTreeChart echarts [options]="diskBarOption" class="treeGDIV" (chartInit)="onDiskTreeInit($event)"></div>
         </td>
     </tr>

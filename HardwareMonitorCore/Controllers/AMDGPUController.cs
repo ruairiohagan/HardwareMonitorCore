@@ -1,6 +1,4 @@
-﻿using HardwareMonitor.OpenHardware.HardwareHelper;
-using Microsoft.AspNetCore.Mvc;
-using OpenHardwareMonitor.Hardware.ATI;
+﻿using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Text;
 
@@ -9,127 +7,164 @@ namespace HardwareMonitor.Controllers
     [Route("api/AMDGPU/{Action}")]
     public class AMDGPUController : ControllerBase
     {
-        private static ATIGPU? _atiGPUHandler = null;
-        private ATIGPU atiGPUHandler
+        private static string gpuName = "";
+        private static int gpuMaxPower = 100;
+        public AMDGPUController(IConfiguration config)
         {
-            get 
+            gpuName = config["GPU:Name"] ?? "";
+            gpuMaxPower = config.GetValue<int>("GPU:MaxPower");
+        }
+        private static readonly object _adlxHelpInitLock = new object();
+        protected static ADLXHelper? _adlxHelper = null;
+        protected internal static ADLXHelper adlxHelper
+        {
+            get
             {
-                if (_atiGPUHandler == null)
+                lock (_adlxHelpInitLock)
                 {
-                    IntPtr context = IntPtr.Zero;
-
-                    var adlStatus = ADL.ADL_Main_Control_Create(1);
-                    var adl2Status = ADL.ADL2_Main_Control_Create(1, out context);
-
-                    var status = ADL.ADL_Graphics_Versions_Get(out var versionInfo);
-
-                    if (adlStatus == ADLStatus.OK)
+                    if (_adlxHelper == null)
                     {
-                        int numberOfAdapters = 0;
-                        ADL.ADL_Adapter_NumberOfAdapters_Get(ref numberOfAdapters);
+                        _adlxHelper = new ADLXHelper();
+                        ADLX_RESULT res = _adlxHelper.Initialize();
 
-                        if (numberOfAdapters > 0)
+                        if (res != ADLX_RESULT.ADLX_OK)
                         {
-                            ADLAdapterInfo[] adapterInfo = new ADLAdapterInfo[numberOfAdapters];
-                            if (ADL.ADL_Adapter_AdapterInfo_Get(adapterInfo) == ADLStatus.OK)
-                                for (int i = 0; i < numberOfAdapters; i++)
-                                {
-                                    int isActive;
-                                    ADL.ADL_Adapter_Active_Get(adapterInfo[i].AdapterIndex,
-                                      out isActive);
-                                    int adapterID;
-                                    ADL.ADL_Adapter_ID_Get(adapterInfo[i].AdapterIndex,
-                                      out adapterID);
-
-                                    if (!string.IsNullOrEmpty(adapterInfo[i].UDID) &&
-                                      adapterInfo[i].VendorID == ADL.ATI_VENDOR_ID)
-                                    {
-                                        var nameBuilder = new StringBuilder(adapterInfo[i].AdapterName);
-                                        nameBuilder.Replace("(TM)", " ");
-                                        for (int j = 0; j < 10; j++) nameBuilder.Replace("  ", " ");
-                                        var name = nameBuilder.ToString().Trim();
-
-                                        _atiGPUHandler = new ATIGPU(name,
-                                          adapterInfo[i].AdapterIndex,
-                                          adapterInfo[i].BusNumber,
-                                          adapterInfo[i].DeviceNumber, context);
-                                    }
-                                }
+                            _adlxHelper = null;
+                            throw new InvalidOperationException("Could not properly initialise the ADLX helper.");
                         }
                     }
-                    if (_atiGPUHandler == null)
+                }
+                return _adlxHelper;
+            }
+        }
+        protected internal static bool ADLXHelperInitialized => _adlxHelper != null;
+
+        private static readonly object _adlxGetGPULock = new object();
+        protected static IADLXGPU? _targetGPU = null;
+        protected static IADLXGPU? targetGPU
+        {
+            get
+            {
+                lock (_adlxGetGPULock)
+                {
+                    if (_targetGPU == null)
                     {
-                        throw new InvalidOperationException("Could not properly initialise the ATI graphics card controller.");
+                        IADLXSystem sys = adlxHelper.GetSystemServices();
+                        if (sys != null)
+                        {
+                            SWIGTYPE_p_p_adlx__IADLXGPUList ppGPUS = ADLX.new_gpuListP_Ptr();
+                            ADLX_RESULT res = sys.GetGPUs(ppGPUS);
+                            if (res == ADLX_RESULT.ADLX_OK)
+                            {
+                                IADLXGPUList gpuList = ADLX.gpuListP_Ptr_value(ppGPUS);
+
+                                for (uint iGPU = gpuList.Begin(); iGPU != gpuList.Size(); iGPU++)
+                                {
+                                    SWIGTYPE_p_p_adlx__IADLXGPU ppGPU = ADLX.new_gpuP_Ptr();
+                                    res = gpuList.At(iGPU, ppGPU);
+                                    IADLXGPU sGPU = ADLX.gpuP_Ptr_value(ppGPU);
+
+                                    SWIGTYPE_p_p_char ppGPUName = ADLX.new_charP_Ptr();
+                                    sGPU.Name(ppGPUName);
+                                    string name = ADLX.charP_Ptr_value(ppGPUName);
+
+                                    if (sGPU != null && name == gpuName)
+                                    {
+                                        _targetGPU = sGPU;
+                                        break;
+                                    }
+                                }
+
+                            }
+                        }
                     }
                 }
-                return _atiGPUHandler; 
+                return _targetGPU;
             }
         }
 
         [HttpGet]
         public AMDGPUInfo GetGPUValues()
         {
-            atiGPUHandler.Update();
-
-            AMDGPUInfo gpuInfo = new AMDGPUInfo()
+            try
             {
-                temperatureCore = atiGPUHandler.temperatureCore.Value,
-                temperatureMemory = atiGPUHandler.temperatureMemory.Value,
-                temperatureVrmCore = atiGPUHandler.temperatureVrmCore.Value,
-                temperatureVrmMemory = atiGPUHandler.temperatureVrmMemory.Value,
-                temperatureVrmMemory0 = atiGPUHandler.temperatureVrmMemory0.Value,
-                temperatureVrmMemory1 = atiGPUHandler.temperatureVrmMemory1.Value,
-                temperatureLiquid = atiGPUHandler.temperatureLiquid.Value,
-                temperaturePlx = atiGPUHandler.temperaturePlx.Value,
-                temperatureHotSpot = atiGPUHandler.temperatureHotSpot.Value,
-                temperatureVrmSoc = atiGPUHandler.temperatureVrmSoc.Value,
-                powerCore = atiGPUHandler.powerCore.Value,
-                powerPpt = atiGPUHandler.powerPpt.Value,
-                powerSocket = atiGPUHandler.powerSocket.Value,
-                powerTotal = atiGPUHandler.powerTotal.Value,
-                powerSoc = atiGPUHandler.powerSoc.Value,
-                fan = atiGPUHandler.fan.Value,
-                fanPercentage = atiGPUHandler.fanPercentage.Value,
-                coreClock = atiGPUHandler.coreClock.Value,
-                memoryClock = atiGPUHandler.memoryClock.Value,
-                socClock = atiGPUHandler.socClock.Value,
-                coreVoltage = atiGPUHandler.coreVoltage.Value,
-                memoryVoltage = atiGPUHandler.memoryVoltage.Value,
-                socVoltage = atiGPUHandler.socVoltage.Value,
-                coreLoad = atiGPUHandler.coreLoad.Value,
-                memoryLoad = atiGPUHandler.memoryLoad.Value
-            };
+                AMDGPUInfo gpuInfo = new AMDGPUInfo();
 
-            return gpuInfo;
+                IADLXSystem sys = adlxHelper.GetSystemServices();
+
+                if (sys != null && targetGPU != null)
+                {
+                    SWIGTYPE_p_p_adlx__IADLXPerformanceMonitoringServices ppPerfMonServices = ADLX.new_performanceMonSerP_Ptr();
+                    ADLX_RESULT res = sys.GetPerformanceMonitoringServices(ppPerfMonServices);
+
+                    if (res == ADLX_RESULT.ADLX_OK)
+                    {
+                        SWIGTYPE_p_p_adlx__IADLXGPUMetrics ppGPUMetrics = ADLX.new_gpuMetrics_Ptr();
+                        IADLXPerformanceMonitoringServices perfSerivce = ADLX.performanceMonSerP_Ptr_value(ppPerfMonServices);
+                        res = perfSerivce.GetCurrentGPUMetrics(targetGPU, ppGPUMetrics);
+
+                        SWIGTYPE_p_double pdVal = ADLX.new_doubleP();
+                        SWIGTYPE_p_int piVal = ADLX.new_intP();
+                        if (res == ADLX_RESULT.ADLX_OK)
+                        {
+                            IADLXGPUMetrics metrics = ADLX.gpuMetrics_Ptr_value(ppGPUMetrics);
+
+                            metrics.GPUTemperature(pdVal);
+                            gpuInfo.temperatureCore = ADLX.doubleP_value(pdVal);
+
+                            metrics.GPUHotspotTemperature(pdVal);
+                            gpuInfo.temperatureHotSpot = ADLX.doubleP_value(pdVal);
+
+                            metrics.GPUTotalBoardPower(pdVal);
+                            gpuInfo.powerTotal = ADLX.doubleP_value(pdVal);
+
+                            metrics.GPUFanSpeed(piVal);
+                            gpuInfo.fan = ADLX.intP_value(piVal);
+                        }
+                        SWIGTYPE_p_p_adlx__IADLXFPS ppFPS = ADLX.new_fps_Ptr();
+                        res = perfSerivce.GetCurrentFPS(ppFPS);
+                        if (res == ADLX_RESULT.ADLX_OK)
+                        {
+                            IADLXFPS fps = ADLX.fps_Ptr_value(ppFPS);
+
+                            res = fps.FPS(piVal);
+                            if (res == ADLX_RESULT.ADLX_OK)
+                            {
+                                gpuInfo.fps = ADLX.intP_value(piVal);
+                            }
+                            else
+                            {
+                                gpuInfo.fps = null;
+                            }
+                        }
+
+                        gpuInfo.powerMax = gpuMaxPower;
+                    }
+                }
+                return gpuInfo;
+            }
+            catch (Exception)
+            {
+                // Clear the helper and gpu classes to force reinitialization
+                if (_adlxHelper != null)
+                {
+                    _adlxHelper.Terminate();
+                    _adlxHelper.Dispose();
+                    _adlxHelper = null;
+                }
+                _targetGPU = null;
+                throw;
+            }
         }
     }
 
     public class AMDGPUInfo
     {
-        public float? temperatureCore { get; set; }
-        public float? temperatureMemory { get; set; }
-        public float? temperatureVrmCore { get; set; }
-        public float? temperatureVrmMemory { get; set; }
-        public float? temperatureVrmMemory0 { get; set; }
-        public float? temperatureVrmMemory1 { get; set; }
-        public float? temperatureLiquid { get; set; }
-        public float? temperaturePlx { get; set; }
-        public float? temperatureHotSpot { get; set; }
-        public float? temperatureVrmSoc { get; set; }
-        public float? powerCore { get; set; }
-        public float? powerPpt { get; set; }
-        public float? powerSocket { get; set; }
-        public float? powerTotal { get; set; }
-        public float? powerSoc { get; set; }
-        public float? fan { get; set; }
-        public float? fanPercentage { get; set; }
-        public float? coreClock { get; set; }
-        public float? memoryClock { get; set; }
-        public float? socClock { get; set; }
-        public float? coreVoltage { get; set; }
-        public float? memoryVoltage { get; set; }
-        public float? socVoltage { get; set; }
-        public float? coreLoad { get; set; }
-        public float? memoryLoad { get; set; }
+        public double? temperatureCore { get; set; }
+        public double? temperatureHotSpot { get; set; }
+        public double? powerTotal { get; set; }
+        public double? powerMax { get; set; }
+        public double? fan { get; set; }
+        public int? fps { get; set; }
     }
 }

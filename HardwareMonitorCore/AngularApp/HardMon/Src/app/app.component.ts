@@ -105,6 +105,9 @@ export class AppComponent {
     public get gpuPower(): number {
         return this.gpuData?.powerTotal ?? 0;
     };
+    public get gpuPowerMax(): number {
+        return this.gpuData?.powerMax ?? 100;
+    };
     public gpuGaugeOptionActual =
         {
             data: [{
@@ -269,7 +272,7 @@ export class AppComponent {
                 type: 'value'
             },
             grid: {
-                height: '95%',
+                height: '100%',
                 width: '95%',
                 top: 10
             },
@@ -354,7 +357,8 @@ export class AppComponent {
             if (result) {
                 this.gpuData = result;
 
-                this.gpuGaugeOptionActual.progress.itemStyle.color = this.GetLightsColour(this.gpuPower, 300).toString();
+                this.gpuGaugeOptionActual.max = this.gpuPowerMax;
+                this.gpuGaugeOptionActual.progress.itemStyle.color = this.GetLightsColour(this.gpuPower, this.gpuPowerMax).toString();
                 this.gpuGaugeOptionActual.data[0].value = this.gpuPower;
                 this.gpuGaugeChart.setOption(this.gpuGaugeOption);
             }
@@ -445,4 +449,10 @@ export class AppComponent {
         var fanRPM: number = this.gpuData?.fan ?? 0;
         return this.round(fanRPM, 0);
     }
+    public get fps(): string {
+        if (!this.gpuData?.fps) return ""
+        var frames: number = this.gpuData?.fps ?? 0;
+        return frames.toString();
+    };
+
 }

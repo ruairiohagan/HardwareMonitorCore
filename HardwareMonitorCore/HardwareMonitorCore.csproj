@@ -26,11 +26,17 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Remove="Lib\ADLXCSharpBind.dll" />
+    <None Remove="Lib\ADLXCSharpBind.pdb" />
     <None Remove="OpenHardware\WinRing0.sys" />
     <None Remove="OpenHardware\WinRing0x64.sys" />
   </ItemGroup>
 
   <ItemGroup>
+    <Content Include="Lib\ADLXCSharpBind.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <TargetPath>ADLXCSharpBind.dll</TargetPath>
+    </Content>
     <EmbeddedResource Include="OpenHardware\WinRing0.sys" />
     <EmbeddedResource Include="OpenHardware\WinRing0x64.sys" />
   </ItemGroup>
@@ -46,6 +52,10 @@
     <PackageReference Include="System.Security.AccessControl" Version="6.0.1" />
     <PackageReference Include="System.Threading.AccessControl" Version="9.0.0" />
     <PackageReference Include="System.Reflection.Emit" Version="4.3.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="ADLX\" />
   </ItemGroup>
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">

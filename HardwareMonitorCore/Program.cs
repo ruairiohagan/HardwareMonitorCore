@@ -1,3 +1,4 @@
+using HardwareMonitor.Controllers;
 using System.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -23,6 +24,15 @@ if (allowedOrigins != null)
 builder.Services.AddControllers();
 
 var app = builder.Build();
+
+app.Lifetime.ApplicationStopping.Register(() =>
+{
+    if (AMDGPUController.ADLXHelperInitialized)
+    {
+        AMDGPUController.adlxHelper.Terminate();
+        AMDGPUController.adlxHelper.Dispose();
+    }
+});
 
 // Configure the HTTP request pipeline.
 

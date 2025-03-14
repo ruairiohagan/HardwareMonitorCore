@@ -81,30 +81,11 @@ export interface CpuInfo {
 }
 export interface AMDGPUInfo {
     temperatureCore: number;
-    temperatureMemory: number;
-    temperatureVrmCore: number;
-    temperatureVrmMemory: number;
-    temperatureVrmMemory0: number;
-    temperatureVrmMemory1: number;
-    temperatureLiquid: number;
-    temperaturePlx: number;
     temperatureHotSpot: number;
-    temperatureVrmSoc: number;
-    powerCore: number;
-    powerPpt: number;
-    powerSocket: number;
     powerTotal: number;
-    powerSoc: number;
+    powerMax: number;
     fan: number;
-    fanPercentage: number;
-    coreClock: number;
-    memoryClock: number;
-    socClock: number;
-    coreVoltage: number;
-    memoryVoltage: number;
-    socVoltage: number;
-    coreLoad: number;
-    memoryLoad: number;
+    fps: number;
 }
 export interface DiskInfo {
     drive: string;
